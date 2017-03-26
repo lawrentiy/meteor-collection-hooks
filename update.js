@@ -47,7 +47,14 @@ CollectionHooks.defineAdvice('update', function (userId, _super, instance, aspec
       // before
       _.each(aspects.before, function (o) {
         _.each(docs, function (doc) {
-          var r = o.aspect.call(_.extend({transform: getTransform(doc)}, ctx), userId, doc, fields, args[1], args[2])
+          var r;
+          try {
+            r = o.aspect.call(_.extend({transform: getTransform(doc)}, ctx), userId, doc, fields, args[1], args[2])
+          }
+          catch (e) {
+            console.log('BEFORE', instance._name, doc, o.aspect.toString(), e);
+            throw e;
+          }
           if (r === false) abort = true
         })
       })
@@ -68,12 +75,18 @@ CollectionHooks.defineAdvice('update', function (userId, _super, instance, aspec
 
       _.each(aspects.after, function (o) {
         _.each(docs, function (doc) {
-          o.aspect.call(_.extend({
-            transform: getTransform(doc),
-            previous: prev.docs && prev.docs[doc._id],
-            affected: affected,
-            err: err
-          }, ctx), userId, doc, fields, prev.mutator, prev.options)
+          try {
+            o.aspect.call(_.extend({
+                transform: getTransform(doc),
+                previous: prev.docs && prev.docs[doc._id],
+                affected: affected,
+                err: err
+              }, ctx), userId, doc, fields, prev.mutator, prev.options)
+          }
+          catch (e) {
+            console.log('AFTER', instance._name, doc, o.aspect.toString(), e);
+            throw e;
+          }
         })
       })
     }
